@@ -57,6 +57,22 @@ This also improves browser caching between deployments.
 Vite ships `vite/client` which declares the `ImportMeta` augmentation for `import.meta.env`, `import.meta.hot`, etc.
 **Lesson:** Every Vite + strict TypeScript project needs `"types": ["vite/client"]`. Add it at scaffold time.
 
+### BUG-002 – `state` / `setState` clash between PetFighter and Phaser.Sprite
+**Symptom:** TS2611 (`state` is a property in Sprite but overridden as accessor), TS2416 (`setState` return type mismatch), TS4114 (missing `override`).
+**Root cause:** `Phaser.GameObjects.GameObject` defines `state: string | number` and `setState(value): this`. Our FSM used the same names with incompatible signatures.
+**Fix:** Renamed FSM accessor to `fighterState` and setter to `setFighterState`. Never clash with Phaser built-in GameObject property names (`state`, `name`, `type`, `active`, `visible`).
+**Lesson:** Always check `Phaser.GameObjects.GameObject` / `Sprite` property list before naming public members on a subclass.
+
+### BUG-003 – `scene.make.graphics({ add: false })` unknown property
+**Symptom:** TS2353: Object literal may only specify known properties, 'add' does not exist in type 'Options'.
+**Root cause:** Phaser 3 TypeScript types no longer include `add` in `Phaser.Types.GameObjects.Graphics.Options`.
+**Fix:** Use `scene.add.graphics()` followed immediately by `generateTexture()` and `destroy()`. The graphics object is removed from the display list synchronously before the next render frame.
+
+### BUG-004 – `this.scene.data` vs `this.data`
+**Symptom:** TS2339: Property 'data' does not exist on type 'ScenePlugin'.
+**Root cause:** `this.scene` inside a `Phaser.Scene` subclass is the `ScenePlugin` (scene management), NOT the scene itself. The scene's data manager is accessed via `this.data`.
+**Fix:** Use `this.data.set(...)` / `this.data.get(...)` inside a Scene class. Pass `this.scene` to other objects only for scene transitions.
+
 ---
 
 ## Anti-Patterns to Avoid

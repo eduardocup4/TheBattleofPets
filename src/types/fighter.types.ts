@@ -20,6 +20,12 @@ export type FighterState =
 
 // ─── Input ───────────────────────────────────────────────────────────────────
 
+/**
+ * Represents the input state for a single frame.
+ * - axisX / axisY : continuous joystick values (-1 to +1)
+ * - attack / jump / special / ultimate / assist : EDGE-TRIGGERED – true only
+ *   on the frame the button was FIRST pressed (not while held).
+ */
 export interface InputState {
   /** Normalised joystick X: -1 (left) to +1 (right), 0 = neutral */
   axisX: number;
@@ -50,11 +56,20 @@ export interface FighterStats {
 
 export interface HitData {
   damage: number;
-  stunDuration?: number;  // ms; if set → triggers Stun state
+  /** If set, target transitions to Stun for this many ms */
+  stunDuration?: number;
   knockbackX?: number;
   knockbackY?: number;
   isFireElement?: boolean;
   isIceElement?: boolean;
+}
+
+// ─── Context passed to every PetFighter at construction ──────────────────────
+
+export interface FighterContext {
+  hitboxGroup: Phaser.Physics.Arcade.Group;
+  hurtboxGroup: Phaser.Physics.Arcade.Group;
+  projectileGroup: Phaser.Physics.Arcade.Group;
 }
 
 // ─── Hitbox / Hurtbox rects (relative to fighter origin) ────────────────────

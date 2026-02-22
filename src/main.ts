@@ -13,6 +13,8 @@ import { PreloadScene }         from '@/scenes/PreloadScene';
 import { MainMenuScene }        from '@/scenes/MainMenuScene';
 import { CharacterSelectScene } from '@/scenes/CharacterSelectScene';
 import { FightScene }           from '@/scenes/FightScene';
+import { HUDScene }             from '@/scenes/HUDScene';
+import { VictoryScene }         from '@/scenes/VictoryScene';
 
 // ─── Prevent native context menu (long-press on mobile) ─────────────────────
 window.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -54,6 +56,8 @@ const config: Phaser.Types.Core.GameConfig = {
     MainMenuScene,
     CharacterSelectScene,
     FightScene,
+    HUDScene,
+    VictoryScene,
   ],
 };
 

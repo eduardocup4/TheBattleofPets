@@ -5,7 +5,7 @@
 
 ---
 
-## STEP 1 – Project Scaffold  *(current)*
+## STEP 1 – Project Scaffold  ✅
 
 | # | Task | Status |
 |---|------|--------|
@@ -23,25 +23,30 @@
 | 1.12 | `src/scenes/CharacterSelectScene.ts` – 4 coloured cards | `[x]` |
 | 1.13 | `src/scenes/FightScene.ts` – scaffold, receives FightInitData | `[x]` |
 | 1.14 | `src/main.ts` – Phaser.Game config, scene registration | `[x]` |
-| 1.15 | `npm install` + `tsc --noEmit` passes with 0 errors | `[~]` |
-| 1.16 | Commit + push to feature branch | `[ ]` |
+| 1.15 | `npm install` + `tsc --noEmit` passes with 0 errors | `[x]` |
+| 1.16 | Commit + push to feature branch | `[x]` |
 
 ---
 
-## STEP 2 – Physics & Abstract Fighter (PetFighter)
+## STEP 2 – Physics & Abstract Fighter (PetFighter)  ✅ *(current)*
 
 | # | Task | Status |
 |---|------|--------|
-| 2.1 | `src/fighters/PetFighter.ts` – abstract class, Arcade body | `[ ]` |
-| 2.2 | FSM: Idle, Walk, Jump, Guard, Attack, Special, Ultimate, Assist, Hurt, Stun, Victory, Dead | `[ ]` |
-| 2.3 | HP bar + MP bar components | `[ ]` |
-| 2.4 | Hurtbox (receives damage) as separate Arcade body | `[ ]` |
-| 2.5 | Auto-Guard logic: joystick facing away from opponent on hit → 10% damage | `[ ]` |
-| 2.6 | Ground detection & landing | `[ ]` |
-| 2.7 | `src/components/VirtualJoystick.ts` | `[ ]` |
-| 2.8 | `src/components/ActionButtons.ts` – A, B, C, D, E | `[ ]` |
-| 2.9 | Keyboard input adapter (P1 = WASD+UIOP, P2 = Arrows+NUMPAD) | `[ ]` |
-| 2.10 | HUD overlay scene (`HUDScene` runs on top of FightScene) | `[ ]` |
+| 2.1 | `src/fighters/PetFighter.ts` – abstract class, Arcade body | `[x]` |
+| 2.2 | FSM: Idle, Walk, Jump, Guard, Attack, Special, Ultimate, Assist, Hurt, Stun, Victory, Dead | `[x]` |
+| 2.3 | HP bar + MP bar in HUDScene | `[x]` |
+| 2.4 | Hurtbox (receives damage) as separate Arcade body | `[x]` |
+| 2.5 | Auto-Guard logic: joystick facing away from opponent on hit → 10% damage | `[x]` |
+| 2.6 | Ground detection & landing | `[x]` |
+| 2.7 | `src/components/VirtualJoystick.ts` | `[x]` |
+| 2.8 | `src/components/ActionButtons.ts` – A, B, C, D, E | `[x]` |
+| 2.9 | Keyboard input adapter (P1 = WASD+UIOL, P2 = Arrows+NUMPAD) | `[x]` |
+| 2.10 | HUD overlay scene (`HUDScene` runs on top of FightScene) | `[x]` |
+| 2.11 | All 4 characters: DanaV1, DanaV2, Betsbi, Bebi | `[x]` |
+| 2.12 | 4 procedural stage backgrounds | `[x]` |
+| 2.13 | VictoryScene with quote, rematch & menu buttons | `[x]` |
+| 2.14 | Round timer (99 s) | `[x]` |
+| 2.15 | `tsc --noEmit` passes 0 errors | `[x]` |
 
 ---
 
