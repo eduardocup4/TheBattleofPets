@@ -12,105 +12,18 @@
  */
 
 import Phaser from 'phaser';
-import { FightInitData, StageId } from '@/types/scene.types';
+import { FightInitData } from '@/types/scene.types';
 import { FighterContext, HitData } from '@/types/fighter.types';
 import { GAME_WIDTH, GAME_HEIGHT } from '@/config/game.config';
-import { SoundManager }   from '@/managers/SoundManager';
-import { InputManager }   from '@/managers/InputManager';
-import { PetFighter }     from '@/fighters/PetFighter';
-import { createFighter }  from '@/fighters/FighterFactory';
-
-// ─── Stage rendering data ─────────────────────────────────────────────────────
-
-interface LayerDef { color: number; x: number; y: number; w: number; h: number }
-
-interface StageDef {
-  sky:    number;
-  ground: number;
-  layers: LayerDef[];
-}
+import { SoundManager }    from '@/managers/SoundManager';
+import { InputManager }    from '@/managers/InputManager';
+import { PetFighter }      from '@/fighters/PetFighter';
+import { createFighter }   from '@/fighters/FighterFactory';
+import { StageRenderer }   from '@/rendering/StageRenderer';
 
 const GROUND_H  = 24;
 const GROUND_Y  = GAME_HEIGHT - 70;   // top of the ground platform
 const FIGHTER_Y = GROUND_Y - 1;       // spawn Y (body bottom touches ground)
-
-const STAGES: Record<StageId, StageDef> = {
-  VETERINARIA: {
-    sky:    0xe8f5e9,
-    ground: 0x4db6ac,
-    layers: [
-      // Back wall
-      { color: 0xffffff, x: GAME_WIDTH/2, y: GAME_HEIGHT/2 - 20, w: GAME_WIDTH, h: GAME_HEIGHT - 120 },
-      // Green stripe on wall
-      { color: 0x80cbc4, x: GAME_WIDTH/2, y: 90, w: GAME_WIDTH, h: 30 },
-      // Examination table (right)
-      { color: 0x90caf9, x: 740, y: GROUND_Y - 35, w: 160, h: 20 },
-      // Cabinet (left)
-      { color: 0xb0bec5, x: 90,  y: GROUND_Y - 60, w: 80, h: 80 },
-      // Red cross sign
-      { color: 0xef5350, x: GAME_WIDTH/2, y: 55, w: 30, h: 30 },
-    ],
-  },
-  CASA_ABUELOS: {
-    sky:    0xfff8e1,
-    ground: 0x8d6e63,
-    layers: [
-      // Back wall warm cream
-      { color: 0xffe0b2, x: GAME_WIDTH/2, y: GAME_HEIGHT/2 - 20, w: GAME_WIDTH, h: GAME_HEIGHT - 120 },
-      // Wallpaper stripe
-      { color: 0xffcc80, x: GAME_WIDTH/2, y: 100, w: GAME_WIDTH, h: 20 },
-      // Couch (left)
-      { color: 0xa1887f, x: 130, y: GROUND_Y - 35, w: 200, h: 50 },
-      // Couch back
-      { color: 0x8d6e63, x: 130, y: GROUND_Y - 70, w: 200, h: 20 },
-      // Side table (right)
-      { color: 0x795548, x: 780, y: GROUND_Y - 30, w: 60, h: 40 },
-      // Picture frame
-      { color: 0xffb74d, x: GAME_WIDTH/2, y: 60, w: 80, h: 60 },
-      { color: 0xbcaaa4, x: GAME_WIDTH/2, y: 60, w: 70, h: 50 },
-    ],
-  },
-  DEPTO_SOFIA: {
-    sky:    0xe8eaf6,
-    ground: 0xbcaaa4,
-    layers: [
-      // Back wall modern
-      { color: 0x9fa8da, x: GAME_WIDTH/2, y: GAME_HEIGHT/2 - 20, w: GAME_WIDTH, h: GAME_HEIGHT - 120 },
-      // Window (left)
-      { color: 0x80deea, x: 140, y: 90, w: 160, h: 120 },
-      { color: 0x26c6da, x: 140, y: 90, w: 4,   h: 120 },
-      { color: 0x26c6da, x: 140, y: 90, w: 160, h: 4 },
-      // Bookshelf (right)
-      { color: 0x6d4c41, x: 820, y: GROUND_Y - 70, w: 90, h: 90 },
-      { color: 0xef9a9a, x: 810, y: GROUND_Y - 95, w: 15, h: 30 },
-      { color: 0x80cbc4, x: 830, y: GROUND_Y - 90, w: 15, h: 25 },
-      // Rug
-      { color: 0xce93d8, x: GAME_WIDTH/2, y: GROUND_Y + 5, w: 360, h: 8 },
-    ],
-  },
-  PARQUE: {
-    sky:    0x87ceeb,
-    ground: 0x388e3c,
-    layers: [
-      // Grass ground layer
-      { color: 0x66bb6a, x: GAME_WIDTH/2, y: GROUND_Y + 10, w: GAME_WIDTH, h: 60 },
-      // Trees (trunks)
-      { color: 0x5d4037, x: 80,  y: GROUND_Y - 60, w: 28, h: 80 },
-      { color: 0x5d4037, x: 880, y: GROUND_Y - 60, w: 28, h: 80 },
-      { color: 0x5d4037, x: 440, y: GROUND_Y - 40, w: 20, h: 60 },
-      // Tree canopies
-      { color: 0x2e7d32, x: 80,  y: GROUND_Y - 130, w: 90,  h: 80 },
-      { color: 0x388e3c, x: 80,  y: GROUND_Y - 150, w: 70,  h: 50 },
-      { color: 0x2e7d32, x: 880, y: GROUND_Y - 130, w: 90,  h: 80 },
-      { color: 0x388e3c, x: 880, y: GROUND_Y - 150, w: 70,  h: 50 },
-      { color: 0x43a047, x: 440, y: GROUND_Y - 100, w: 60,  h: 60 },
-      // Cloud
-      { color: 0xffffff, x: 250, y: 60, w: 100, h: 36 },
-      { color: 0xffffff, x: 280, y: 48, w: 60,  h: 30 },
-      { color: 0xffffff, x: 680, y: 80, w: 80,  h: 28 },
-    ],
-  },
-};
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
@@ -274,19 +187,8 @@ export class FightScene extends Phaser.Scene {
 
   // ─── Stage rendering ──────────────────────────────────────────────────────
 
-  private _renderStage(stage: StageId): void {
-    const def = STAGES[stage];
-
-    // Sky
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, def.sky);
-
-    // Decorative layers (back to front)
-    for (const layer of def.layers) {
-      this.add.rectangle(layer.x, layer.y, layer.w, layer.h, layer.color);
-    }
-
-    // Ground strip (visual)
-    this.add.rectangle(GAME_WIDTH / 2, GROUND_Y + GROUND_H / 2, GAME_WIDTH, GROUND_H * 3, def.ground);
+  private _renderStage(stage: import('@/types/scene.types').StageId): void {
+    StageRenderer.render(this, stage, GROUND_Y, GROUND_H);
   }
 
   // ─── Hit detection callbacks ──────────────────────────────────────────────

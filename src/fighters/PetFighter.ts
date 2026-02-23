@@ -3,8 +3,13 @@
  *
  * Naming note: Phaser.GameObjects.Sprite already owns `state` (string|number)
  * and `setState(value)`. To avoid the collision our FSM uses:
- *   • fighterState  (getter) → FighterState enum value
- *   • setFighterState(s)     → FSM transition
+ *   • fighterState  (getter)  → FighterState enum value
+ *   • setFighterState(s)      → FSM transition
+ *
+ * Sprite system:
+ *   When the character's sprite sheet is loaded, PetFighter plays Phaser
+ *   animations keyed as `{stats.animPrefix}_{FighterState}` (e.g. 'dana_v1_Idle').
+ *   If no sheet is found the fallback placeholder coloured rectangle is used.
  */
 
 import Phaser from 'phaser';
@@ -47,6 +52,9 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
   // ─── Facing: 1 = right, −1 = left ────────────────────────────────────────
   facingDir: 1 | -1 = 1;
 
+  // ─── Sprite sheet available flag ──────────────────────────────────────────
+  private readonly _hasSheet: boolean;
+
   // ─── Last input (for auto-guard check) ───────────────────────────────────
   protected lastInput: InputState = {
     axisX: 0, axisY: 0,
@@ -60,27 +68,34 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
     x: number,
     y: number,
     stats: FighterStats,
-    textureKey: string,
+    sheetKey: string,
+    fallbackKey: string,
+    displayHeight: number,
     ctx: FighterContext,
   ) {
-    super(scene, x, y, textureKey);
+    const hasSheet = scene.textures.exists(sheetKey);
+    const texKey   = hasSheet ? sheetKey : fallbackKey;
+    super(scene, x, y, texKey);
+
     this.stats = stats;
     this.hp    = stats.maxHp;
     this.mp    = 0;
+    this._hasSheet       = hasSheet;
     this._hitboxGroup    = ctx.hitboxGroup;
     this._projectileGroup = ctx.projectileGroup;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    // ── Visual scale so character occupies ~displayHeight pixels on screen ───
+    const frameH = this.height || displayHeight;
+    this.setScale(displayHeight / frameH);
+
+    // ── Physics body (independent of visual scale) ───────────────────────────
     const body = arcadeBody(this);
     body.setGravityY(stats.gravity);
     body.setCollideWorldBounds(true);
-    body.setSize(stats.width, stats.height);
-    body.setOffset(
-      (this.width  - stats.width)  / 2,
-      (this.height - stats.height) / 2,
-    );
+    body.setSize(stats.width, stats.height, true); // true = auto-centre
 
     // ── Hurtbox ──────────────────────────────────────────────────────────────
     this.hurtbox = scene.physics.add.image(x, y, '__DEFAULT');
@@ -130,6 +145,9 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
   }
 
   private _onStateEnter(state: FighterState): void {
+    // Play animation if a sheet is present
+    this._playAnim(state);
+
     switch (state) {
       case 'Attack':
         this.doAttack();
@@ -156,7 +174,7 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
         break;
       case 'Dead':
         arcadeBody(this).setVelocityX(0);
-        this.setTint(0x888888);
+        if (!this._hasSheet) this.setTint(0x888888);
         break;
       case 'Victory':
         arcadeBody(this).setVelocity(0, 0);
@@ -198,6 +216,16 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
       this._fighterState === 'Walk' ||
       this._fighterState === 'Jump'
     );
+  }
+
+  // ─── Animation ────────────────────────────────────────────────────────────
+
+  private _playAnim(state: FighterState): void {
+    if (!this._hasSheet || !this.stats.animPrefix) return;
+    const key = `${this.stats.animPrefix}_${state}`;
+    if (this.anims.exists(key)) {
+      this.anims.play(key, true);
+    }
   }
 
   // ─── Input processing ─────────────────────────────────────────────────────
@@ -304,7 +332,7 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (hitData.stunDuration !== undefined && !guarding) {
-      this._fighterState = 'Idle'; // allow re-transition
+      this._fighterState = 'Idle';
       this.setFighterState('Stun');
       if (this._stateTimer) this._stateTimer.destroy();
       this._stateTimer = this.scene.time.delayedCall(hitData.stunDuration, () => {
@@ -332,7 +360,7 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
   setIFrames(duration: number): void {
     this._iFrames = true;
     this.hurtbox.setActive(false);
-    this.setAlpha(0.6);
+    this.setAlpha(0.55);
     this.scene.time.delayedCall(duration, () => {
       this._iFrames = false;
       this.hurtbox.setActive(true);
@@ -430,12 +458,10 @@ export abstract class PetFighter extends Phaser.Physics.Arcade.Sprite {
     g.lineStyle(2, 0x000000, 0.6);
     g.strokeRoundedRect(0, 0, width, height, 8);
 
-    // Eyes
     g.fillStyle(0x000000, 0.9);
     g.fillCircle(width * 0.3, height * 0.22, 4);
     g.fillCircle(width * 0.7, height * 0.22, 4);
 
-    // Nose
     g.fillStyle(0x000000, 0.5);
     g.fillCircle(width * 0.5, height * 0.32, 2.5);
 

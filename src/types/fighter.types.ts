@@ -46,10 +46,18 @@ export interface FighterStats {
   walkSpeed: number;
   jumpVelocity: number;
   gravity: number;
-  /** Colour used for the placeholder rectangle */
+  /** Colour used for the placeholder rectangle (shown when sprite sheet is absent) */
   placeholderColor: number;
+  /** Physics hitbox width (world pixels) */
   width: number;
+  /** Physics hitbox height (world pixels) */
   height: number;
+  /**
+   * Prefix for this character's animation keys (e.g. 'dana_v1').
+   * Animation keys are: `${animPrefix}_${FighterState}` (e.g. 'dana_v1_Idle').
+   * Leave empty string if using placeholder only.
+   */
+  animPrefix: string;
 }
 
 // ─── Hit data carried by a projectile / hitbox ───────────────────────────────

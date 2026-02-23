@@ -1,11 +1,14 @@
 /**
  * PreloadScene – loads all assets before any game logic runs.
  *
- * Step 1: only a loading bar is shown (no real assets yet).
- * Assets are loaded by key; the rest of the engine references those keys.
+ * Step 3: loads the 4 character sprite sheets (when present in /public/assets/characters/)
+ * and registers all Phaser animations from ANIM_DEFS.
+ * If a sheet file is missing the loader silently continues; fighters fall
+ * back to their procedural placeholder textures.
  */
 
 import Phaser from 'phaser';
+import { SHEETS, ANIM_DEFS } from '@/config/animations';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -13,10 +16,10 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.createLoadingBar();
+    this._createLoadingBar();
+    this._loadSheets();
 
-    // ── Audio stubs (will be replaced with real files in later steps) ─────────
-    // Uncomment and add real paths when audio assets are available:
+    // ── Audio stubs (wired in the audio step) ────────────────────────────────
     // this.load.audio('bgm_veterinaria',  'assets/audio/bgm/veterinaria.ogg');
     // this.load.audio('bgm_casa_abuelos', 'assets/audio/bgm/casa_abuelos.ogg');
     // this.load.audio('bgm_depto_sofia',  'assets/audio/bgm/depto_sofia.ogg');
@@ -28,12 +31,49 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    this._registerAnims();
     this.scene.start('MainMenuScene');
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────
 
-  private createLoadingBar(): void {
+  private _loadSheets(): void {
+    // Suppress Phaser loader errors for missing files – fighters degrade gracefully.
+    this.load.on('loaderror', (_file: Phaser.Loader.File) => {
+      console.warn('[PreloadScene] Asset not found (graceful fallback):', _file.src);
+    });
+
+    for (const cfg of Object.values(SHEETS)) {
+      this.load.spritesheet(cfg.key, cfg.path, {
+        frameWidth:  cfg.frameWidth,
+        frameHeight: cfg.frameHeight,
+      });
+    }
+  }
+
+  private _registerAnims(): void {
+    for (const def of ANIM_DEFS) {
+      // Skip if the sheet wasn't loaded (texture won't exist)
+      if (!this.textures.exists(def.sheetKey)) continue;
+      // Skip if the animation key was already registered (hot-reload guard)
+      if (this.anims.exists(def.key)) continue;
+
+      this.anims.create({
+        key:       def.key,
+        frames:    this.anims.generateFrameNumbers(def.sheetKey, {
+          start: def.startFrame,
+          end:   def.endFrame,
+        }),
+        frameRate: def.frameRate,
+        repeat:    def.repeat,
+      });
+    }
+
+    const registeredCount = ANIM_DEFS.filter(d => this.anims.exists(d.key)).length;
+    console.info(`[PreloadScene] Registered ${registeredCount} animations.`);
+  }
+
+  private _createLoadingBar(): void {
     const { width, height } = this.scale;
     const cx = width / 2;
     const cy = height / 2;
@@ -41,7 +81,6 @@ export class PreloadScene extends Phaser.Scene {
     const barWidth  = width * 0.6;
     const barHeight = 24;
 
-    // Title
     this.add
       .text(cx, cy - 60, 'THE BATTLE OF PETS', {
         fontSize: '28px',

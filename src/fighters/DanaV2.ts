@@ -1,29 +1,31 @@
 /**
  * DANA V2 – Speed / Combo
  *
- * Profile : Fast movement, low damage per hit.
- * Attack  : Fast close-range hitbox.
- * Special : Anti-air Shoryuken (fire, travels on Y axis).
- * Ultimate: Auto 4-hit combo ending with an explosive stomp.
- * Assist  : Fast horizontal fire projectile.
- * Victory : "Ahora vamos al mundo perruno a dormir"
+ * Sheet: dana_v2_sheet.png  (frameW=220, frameH=180)
+ *   Row 1 (0-2)  : idle
+ *   Row 2 (3-8)  : attack + shoryuken
+ *   Row 3 (9-14) : walk, fire, jump
+ *   Row 4 (15-18): landing
  */
 
 import Phaser from 'phaser';
 import { FighterStats, FighterContext, HitData } from '@/types/fighter.types';
+import { SHEETS } from '@/config/animations';
 import { PetFighter } from './PetFighter';
 
-const TEXTURE_KEY = 'fighter_danav2';
+const SHEET    = SHEETS['DANA_V2']!;
+const FALLBACK = 'ph_danav2';
 
 const STATS: FighterStats = {
-  maxHp:       900,
-  maxMp:       100,
-  walkSpeed:   340,   // Fast
-  jumpVelocity: -1000,
-  gravity:     2200,  // Falls faster
-  placeholderColor: 0x5a3010, // dark brown
-  width:  70,
-  height: 110,
+  maxHp:            900,
+  maxMp:            100,
+  walkSpeed:        340,
+  jumpVelocity:    -1000,
+  gravity:          2200,
+  placeholderColor: 0x5a3010,
+  width:            66,
+  height:           110,
+  animPrefix:       'dana_v2',
 };
 
 export class DanaV2 extends PetFighter {
@@ -32,42 +34,31 @@ export class DanaV2 extends PetFighter {
 
   constructor(scene: Phaser.Scene, x: number, y: number, ctx: FighterContext) {
     PetFighter.createFighterTexture(
-      scene, TEXTURE_KEY,
-      STATS.placeholderColor, STATS.width, STATS.height,
-      true, // bandana
+      scene, FALLBACK, STATS.placeholderColor, STATS.width, STATS.height, true,
     );
-    super(scene, x, y, STATS, TEXTURE_KEY, ctx);
+    super(scene, x, y, STATS, SHEET.key, FALLBACK, SHEET.displayHeight, ctx);
   }
 
   get characterName(): string { return 'DANA V2'; }
   getVictoryQuote(): string   { return 'Ahora vamos al mundo perruno a dormir'; }
 
-  // ── Attack: fast close-range hit ──────────────────────────────────────────
+  // ── Attack ────────────────────────────────────────────────────────────────
   doAttack(): void {
-    const hitData: HitData = {
-      damage:     55,
-      knockbackX: 180,
-      isFireElement: true,
-    };
+    const hitData: HitData = { damage: 55, knockbackX: 180, isFireElement: true };
     this.spawnHitbox(50, 0, 60, 60, hitData, 160);
-    this._flashFire(50, 0, 55, 55);
+    this._fireFx(50, 0, 55, 55);
   }
 
-  // ── Special [C]: Anti-air Shoryuken (travels up) ──────────────────────────
+  // ── Special [C]: Anti-air Shoryuken ───────────────────────────────────────
   doSpecial(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocityY(-1100);
     body.setVelocityX(200 * this.facingDir);
-
-    // Hit during ascent
     const hitData: HitData = {
-      damage:     140,
-      knockbackX: 200,
-      knockbackY: -500,
-      isFireElement: true,
+      damage: 140, knockbackX: 200, knockbackY: -500, isFireElement: true,
     };
     this.spawnHitbox(40, -30, 55, 100, hitData, 450);
-    this._flashFire(40, -30, 50, 90);
+    this._fireFx(40, -30, 50, 90);
   }
 
   // ── Ultimate [D]: 4-hit combo → stomp ────────────────────────────────────
@@ -77,20 +68,10 @@ export class DanaV2 extends PetFighter {
   }
 
   private _runNextComboHit(): void {
-    if (this._comboStep >= 4) {
-      // Final stomp
-      this._stomp();
-      return;
-    }
-
-    const hitData: HitData = {
-      damage:     60,
-      knockbackX: 80,
-      isFireElement: true,
-    };
+    if (this._comboStep >= 4) { this._stomp(); return; }
+    const hitData: HitData = { damage: 60, knockbackX: 80, isFireElement: true };
     this.spawnHitbox(50, 0, 55, 55, hitData, 160);
-    this._flashFire(50, 0, 50, 50);
-
+    this._fireFx(50, 0, 50, 50);
     this._comboStep++;
     this._comboTimer = this.scene.time.delayedCall(240, () => {
       if (this.fighterState !== 'Dead') this._runNextComboHit();
@@ -99,25 +80,18 @@ export class DanaV2 extends PetFighter {
 
   private _stomp(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setVelocityY(-600); // mini jump up
+    body.setVelocityY(-600);
     this.scene.time.delayedCall(300, () => {
-      body.setVelocityY(1600); // slam down
+      body.setVelocityY(1600);
       const hitData: HitData = {
-        damage:     180,
-        knockbackX: 400,
-        knockbackY: -350,
-        isFireElement: true,
+        damage: 180, knockbackX: 400, knockbackY: -350, isFireElement: true,
       };
       this.spawnHitbox(0, 50, 90, 80, hitData, 300);
-
-      // Explosion visual
-      const ex = this.scene.add.rectangle(this.x, this.y + 50, 100, 80, 0xff4400, 0.8);
+      const ex = this.scene.add
+        .rectangle(this.x, this.y + 50, 100, 80, 0xff4400, 0.8)
+        .setDepth(30);
       this.scene.tweens.add({
-        targets: ex,
-        alpha: 0,
-        scaleX: 2,
-        scaleY: 2,
-        duration: 350,
+        targets: ex, alpha: 0, scaleX: 2, scaleY: 2, duration: 350,
         onComplete: () => ex.destroy(),
       });
     });
@@ -125,27 +99,18 @@ export class DanaV2 extends PetFighter {
 
   // ── Assist [E]: Fast fire projectile ─────────────────────────────────────
   doAssist(): void {
-    const hitData: HitData = {
-      damage:     75,
-      knockbackX: 220,
-      isFireElement: true,
-    };
+    const hitData: HitData = { damage: 75, knockbackX: 220, isFireElement: true };
     this.spawnProjectile(680, 0, 30, 20, 0xff6600, hitData);
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  private _flashFire(ox: number, oy: number, w: number, h: number): void {
-    const fx = this.scene.add.rectangle(
-      this.x + ox * this.facingDir, this.y + oy,
-      w, h, 0xff6600, 0.75,
-    );
+  private _fireFx(ox: number, oy: number, w: number, h: number): void {
+    const fx = this.scene.add
+      .rectangle(this.x + ox * this.facingDir, this.y + oy, w, h, 0xff6600, 0.75)
+      .setDepth(30);
     this.scene.tweens.add({
-      targets: fx,
-      alpha: 0,
-      scaleX: 1.4,
-      scaleY: 1.4,
-      duration: 200,
+      targets: fx, alpha: 0, scaleX: 1.4, scaleY: 1.4, duration: 200,
       onComplete: () => fx.destroy(),
     });
   }
